@@ -10,16 +10,16 @@ require 'tempfile'
 require 'yaml'
 require 'fileutils'
 
-module Rmate
+module Rsub
   DATE           = "2017-02-10"
   VERSION        = "1.5.9"
-  VERSION_STRING = "rmate version #{Rmate::VERSION} (#{Rmate::DATE})"
+  VERSION_STRING = "rsub version #{Rsub::VERSION} (#{Rsub::DATE})"
 
   class Settings
     attr_accessor :host, :port, :unixsocket, :wait, :force, :verbose, :lines, :names, :types
 
     def initialize
-      @host, @port, @unixsocket = 'localhost', 52698, '~/.rmate.socket'
+      @host, @port, @unixsocket = 'localhost', 52698, '~/.rsub.socket'
 
       @wait    = false
       @force   = false
@@ -30,9 +30,9 @@ module Rmate
 
       read_disk_settings
 
-      @host       = ENV['RMATE_HOST'].to_s       if ENV.has_key? 'RMATE_HOST'
-      @port       = ENV['RMATE_PORT'].to_i       if ENV.has_key? 'RMATE_PORT'
-      @unixsocket = ENV['RMATE_UNIXSOCKET'].to_s if ENV.has_key? 'RMATE_UNIXSOCKET'
+      @host       = ENV['RSUB_HOST'].to_s       if ENV.has_key? 'RSUB_HOST'
+      @port       = ENV['RSUB_PORT'].to_i       if ENV.has_key? 'RSUB_PORT'
+      @unixsocket = ENV['RSUB_UNIXSOCKET'].to_s if ENV.has_key? 'RSUB_UNIXSOCKET'
 
       parse_cli_options
 
@@ -40,7 +40,7 @@ module Rmate
     end
 
     def read_disk_settings
-      [ "/etc/rmate.rc", "/usr/local/etc/rmate.rc", "~/.rmate.rc"].each do |current_file|
+      [ "/etc/rsub.rc", "/usr/local/etc/rsub.rc", "~/.rsub.rc"].each do |current_file|
         file = File.expand_path current_file
         if File.exist? file
           params = YAML::load(File.open(file))
@@ -185,7 +185,7 @@ end
 
 ## MAIN
 
-$settings = Rmate::Settings.new
+$settings = Rsub::Settings.new
 
 ## Parse arguments.
 cmds = []
@@ -201,7 +201,7 @@ ARGV.each_index do |idx|
     abort "File #{path} is not writable! Use -f/--force to open anyway." unless $settings.force or File.writable? path or not File.exist? path
     $stderr.puts "File #{path} is not writable. Opening anyway." if not File.writable? path and File.exist? path and $settings.verbose
   end
-  cmd                 = Rmate::Command.new("open")
+  cmd                 = Rsub::Command.new("open")
   cmd['display-name'] = "#{Socket.gethostname}:untitled (stdin)" if path == '-'
   cmd['display-name'] = "#{Socket.gethostname}:#{path}" unless path == '-'
   cmd['display-name'] = $settings.names[idx] if $settings.names.length > idx
@@ -220,9 +220,9 @@ end
 
 unless $settings.wait
   pid = fork do
-    Rmate::connect_and_handle_cmds($settings.host, $settings.port, $settings.unixsocket, cmds)
+    Rsub::connect_and_handle_cmds($settings.host, $settings.port, $settings.unixsocket, cmds)
   end
   Process.detach(pid)
 else
-  Rmate::connect_and_handle_cmds($settings.host, $settings.port, $settings.unixsocket, cmds)
+  Rsub::connect_and_handle_cmds($settings.host, $settings.port, $settings.unixsocket, cmds)
 end
